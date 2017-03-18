@@ -6,20 +6,20 @@ class BulkEntry {
   private final Map<String, Map> action; // XXX: Refactor this into specific Action class types
   private final Map<String, Object> source;
 
-  public BulkEntry(Map<String, Map> action, Map<String, Object> source) {
+  BulkEntry(Map<String, Map> action, Map<String, Object> source) {
     this.action = action;
     this.source = source;
   }
 
-  public Map<String, Map> getAction() {
+  Map<String, Map> getAction() {
     return action;
   }
 
-  public Map<String, Object> getSource() {
+  Map<String, Object> getSource() {
     return source;
   }
 
-  public boolean hasSource() {
+  boolean hasSource() {
     return source != null;
   }
 }

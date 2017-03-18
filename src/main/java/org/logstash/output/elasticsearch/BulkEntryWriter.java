@@ -26,7 +26,7 @@ class BulkEntryWriter {
     }
   }
 
-  public static ByteBuffer serialize(BulkEntry entry) {
+  static ByteBuffer serialize(BulkEntry entry) {
     OpenByteArrayOutputStream out = new OpenByteArrayOutputStream();
     try {
       BulkEntryWriter.write(out, entry);

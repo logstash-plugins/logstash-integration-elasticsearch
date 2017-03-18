@@ -72,7 +72,9 @@ public class ElasticsearchClientIntegrationTest {
 
     Map<String, String> emptyParams = Collections.emptyMap();
 
+    long start = System.nanoTime();
     // While there are more BulkEntry objects
+    int requestCount = 0;
     while (iterator.hasNext()) {
       ElasticsearchBulkInputStream bulkStream = new ElasticsearchBulkInputStream(iterator, maxBulkRequestSize);
       HttpEntity entity = new InputStreamEntity(bulkStream);
@@ -80,17 +82,20 @@ public class ElasticsearchClientIntegrationTest {
 
       // XXX: Does the entity need to be consumed?
       EntityUtils.consume(response.getEntity());
+      requestCount++;
     }
 
-    System.err.printf("Count: %d\n", entryCount);
+    long duration = System.nanoTime() - start;
+    System.err.printf("%d bulk entries split across %d requests took a total of %dus\n", entryCount, requestCount, duration / 1000);
+
     client.performRequest("POST", "/" + indexName + "/_refresh");
 
     // Ask Elasticsearch for a document count.
     Response response = client.performRequest("GET", "/" + indexName + "/_count");
     ObjectMapper mapper = new ObjectMapper();
     Map result = mapper.readValue(response.getEntity().getContent(), Map.class);
-
     int searchCount = (Integer) result.get("count");
+
     assertEquals("Wrote " + entryCount + " documents. Expected this many in Elasticsearch, but got " + searchCount + " instead.", entryCount, searchCount);
   }
 }

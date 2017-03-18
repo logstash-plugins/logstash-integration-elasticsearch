@@ -6,7 +6,7 @@ class HoldingIterator<T> implements Iterator<T> {
   private final Iterator<T> iterator;
   private T hold = null;
 
-  public HoldingIterator(Iterator<T> iterator) {
+  HoldingIterator(Iterator<T> iterator) {
     this.iterator = iterator;
   }
 
@@ -28,7 +28,7 @@ class HoldingIterator<T> implements Iterator<T> {
     return hold != null;
   }
 
-  public void hold(T value) {
+  void hold(T value) {
     hold = value;
   }
 }

@@ -28,7 +28,7 @@ class ElasticsearchBulkInputStream extends InputStream {
 
   private final LinkedList<ByteBuffer> buffers = new LinkedList<>();
 
-  public ElasticsearchBulkInputStream(HoldingIterator<BulkEntry> iterator, int maxBulkRequestSize) {
+  ElasticsearchBulkInputStream(HoldingIterator<BulkEntry> iterator, int maxBulkRequestSize) {
     this.iterator = iterator;
     this.maxBulkRequestSize = maxBulkRequestSize;
   }

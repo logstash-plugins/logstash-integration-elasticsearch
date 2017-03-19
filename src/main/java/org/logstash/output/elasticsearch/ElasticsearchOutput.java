@@ -1,10 +1,12 @@
 package org.logstash.output.elasticsearch;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +39,16 @@ class ElasticsearchOutput {
       ElasticsearchBulkInputStream bulkStream = new ElasticsearchBulkInputStream(iterator, maxBulkRequestSize);
       HttpEntity entity = new InputStreamEntity(bulkStream);
       assert client != null;
-      //Response response = client.performRequest("POST", "/_bulk", emptyParams, entity);
-      client.performRequest("POST", "/_bulk", emptyParams, entity);
+      try {
+        Response response = client.performRequest("POST", "/_bulk", emptyParams, entity);
+        ObjectMapper mapper = new ObjectMapper();
+        Map responseBody = mapper.readValue(response.getEntity().getContent(), Map.class);
+        // TODO: 3/18/2017 Handle the response.
+      } catch (IOException e) {
+        // TODO: 3/19/2017 Handle exceptions w/ retries, etc. 
+        e.printStackTrace();
+      }
 
-      // TODO: 3/18/2017 Handle the response. 
-      //ObjectMapper mapper = new ObjectMapper();
       requestCount++;
     }
     //long duration = System.nanoTime() - start;

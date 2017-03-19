@@ -15,7 +15,7 @@ class BulkEntryWriter {
    *
    * @param out Where to write the result
    * @param entry The entry to be serialized
-   * @throws IOException
+   * @throws IOException If the OutputStream has problems.
    */
   private static void write(OutputStream out, BulkEntry entry) throws IOException {
     // XXX: Move this to some kind of serialize method in org.logstash.output.elasticsearch.BulkEntry?
@@ -27,7 +27,9 @@ class BulkEntryWriter {
     }
   }
 
-  /*
+  /**
+   * An OutputStream that writes to a byte array.
+   *
    * ByteArrayOutputStream has a protected 'buf' that I'd like to access, so this
    * subclass is the way to get at it.
    *

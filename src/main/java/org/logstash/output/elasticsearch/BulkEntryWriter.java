@@ -10,6 +10,13 @@ import java.nio.ByteBuffer;
 class BulkEntryWriter {
   private static final ObjectMapper mapper = new ObjectMapper();
 
+  /**
+   * Serializes a BulkEntry in Elasticsearch Bulk API encoding.
+   *
+   * @param out Where to write the result
+   * @param entry The entry to be serialized
+   * @throws IOException
+   */
   private static void write(OutputStream out, BulkEntry entry) throws IOException {
     // XXX: Move this to some kind of serialize method in org.logstash.output.elasticsearch.BulkEntry?
     mapper.writeValue(out, entry.getAction());
@@ -33,6 +40,12 @@ class BulkEntryWriter {
     }
   }
 
+  /**
+   * Serialize a BulkEntry.
+   *
+   * @param entry The entry to be serialized
+   * @return A buffer containing the serialized result.
+   */
   static ByteBuffer serialize(BulkEntry entry) {
     OpenByteArrayOutputStream out = new OpenByteArrayOutputStream();
     try {

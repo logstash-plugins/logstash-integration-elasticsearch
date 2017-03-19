@@ -43,7 +43,11 @@ class ElasticsearchOutput {
         Response response = client.performRequest("POST", "/_bulk", emptyParams, entity);
         ObjectMapper mapper = new ObjectMapper();
         Map responseBody = mapper.readValue(response.getEntity().getContent(), Map.class);
-        // TODO: 3/18/2017 Handle the response.
+        /* XXX: Handle the response.
+         * This may be hard given the current model where we have only an Iterator which is mutated by bulkStream.
+         * Maybe ElasticsearchBulkInputStream needs to expose how many entries were created so we can track that
+         * against the original list of events?
+         */
       } catch (IOException e) {
         // TODO: 3/19/2017 Handle exceptions w/ retries, etc. 
         e.printStackTrace();

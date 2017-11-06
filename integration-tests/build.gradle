@@ -1,0 +1,58 @@
+apply plugin: "java"
+
+group "org.logstash.plugins"
+
+buildscript {
+  repositories {
+    mavenCentral()
+    jcenter()
+  }
+
+  dependencies {
+    classpath 'org.ajoberstar:grgit:2.0.1'
+  }
+}
+
+repositories {
+  mavenCentral()
+  jcenter()
+}
+
+dependencies {
+  testCompile 'org.ajoberstar:grgit:2.0.1'
+}
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import org.ajoberstar.grgit.Grgit
+
+task cloneElasticsearch {
+  description 'Clones Elasticsearch 5.6'
+  doLast {
+    cloneElasticRepository("elasticsearch", "es", "5.6")
+  }
+}
+
+task cloneLogstash {
+  description 'Clones Logstash master'
+  doLast {
+    cloneElasticRepository("logstash", "ls", "master")
+  }
+}
+
+private void cloneElasticRepository(String repository, String targetDir, String treeLike) {
+  def grgit
+  def path = Paths.get("${buildDir}".toString(), targetDir)
+  if (Files.exists(path)) {
+    grgit = Grgit.open(dir: path.toString())
+    grgit.fetch()
+    grgit.reset(commit: treeLike, mode: 'hard')
+    grgit.pull(branch: treeLike, remote: 'origin')
+  } else {
+    grgit = Grgit.clone(
+      dir: path.toString(), uri: "https://github.com/elastic/${repository}.git",
+      refToCheckout: treeLike
+    )
+  }
+  grgit.close()
+}

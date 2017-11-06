@@ -1,0 +1,167 @@
+apply plugin: "java"
+apply plugin: "distribution"
+apply plugin: "idea"
+
+group "org.logstash.plugins"
+version "0.0.1"
+
+String elasticsearchVersion = '5.6.4-SNAPSHOT'
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath group: 'org.jruby', name: 'jruby-complete', version: '9.1.13.0'
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  testCompile group: 'org.jruby', name: 'jruby-complete', version: '9.1.13.0'
+}
+
+
+import java.nio.file.Files
+import java.nio.file.Paths
+import org.jruby.embed.PathType
+import org.jruby.embed.ScriptingContainer
+import org.logstash.gradle.IntegrationTests
+import org.logstash.gradle.RubyGradleUtils
+
+RubyGradleUtils rubyGradleUtils = new RubyGradleUtils(buildDir, projectDir)
+
+task installJRuby() doLast {
+  rubyGradleUtils.executeJruby { ScriptingContainer jruby ->
+    jruby.runScriptlet(PathType.ABSOLUTE, "${projectDir}/buildSrc/src/main/ruby/bootstrap.rb")
+    jruby.runScriptlet("ensure_gem(\"jar-dependencies\", \"~> 0.3.11\")")
+    jruby.runScriptlet("ensure_gem(\"ruby-maven\", \"~> 3.3.12\")")
+    jruby.runScriptlet("ensure_gem(\"ruby-maven-libs\", \"~> 3.3.9\")")
+    jruby.runScriptlet("ensure_gem(\"bundler\", \"~> 1.15.4\")")
+  }
+}
+
+task downloadLogstash(type: GradleBuild) {
+  buildFile = "${projectDir}/integration-tests/build.gradle"
+  tasks = ['cloneLogstash']
+  doLast {
+    def lsDir = file("${buildDir}/ls")
+    delete lsDir
+    GFileUtils.moveDirectory(
+      file("${projectDir}/integration-tests/build/ls"),
+      file(lsDir)
+    )
+  }
+}
+
+task bootstrapLogstash(dependsOn: [installJRuby, downloadLogstash], type: GradleBuild) {
+  buildFile = "${buildDir}/ls/build.gradle"
+  tasks = ['assemble']
+}
+
+task rubyBootstrap(dependsOn: [installJRuby, bootstrapLogstash]) doLast {
+  rubyGradleUtils.executeJruby { ScriptingContainer jruby ->
+    jruby.runScriptlet(PathType.ABSOLUTE, "${projectDir}/buildSrc/src/main/ruby/bootstrap.rb")
+    ["filter", "input", "output"].each { plugin ->
+      jruby.runScriptlet(
+        "bundler('" + "${projectDir}/logstash-${plugin}-elasticsearch/Gemfile".toString() + "')"
+      )
+    }
+  }
+}
+
+task packageGems(dependsOn: [rubyBootstrap]) doLast {
+  def gemBuildDir = Paths.get(buildDir.toString(), "gems")
+  GFileUtils.deleteDirectory(gemBuildDir.toFile())
+  Files.createDirectories(gemBuildDir)
+  ["filter", "input", "output"].each { plugin ->
+    def dirname = "logstash-${plugin}-elasticsearch"
+    GFileUtils.copyDirectory(
+      projectDir.toPath().resolve(dirname).toFile(), gemBuildDir.resolve(dirname).toFile()
+    )
+    rubyGradleUtils.executeJruby { ScriptingContainer jruby ->
+      jruby.runScriptlet(PathType.ABSOLUTE, "${projectDir}/buildSrc/src/main/ruby/bootstrap.rb")
+      jruby.runScriptlet("bundler('" + "${buildDir}/gems/logstash-${plugin}-elasticsearch/Gemfile".toString() + "')")
+    }
+    rubyGradleUtils.rake("${buildDir}/gems/logstash-${Plugin}-elasticsearch".toString(), 'vendor')
+    rubyGradleUtils.executeJruby { ScriptingContainer jruby ->
+      jruby.currentDirectory = "${buildDir}/gems/logstash-${plugin}-elasticsearch".toString()
+      jruby.runScriptlet(PathType.ABSOLUTE, "${projectDir}/buildSrc/src/main/ruby/bootstrap.rb")
+      jruby.runScriptlet("pack_gem('" + "${buildDir}/gems/logstash-${plugin}-elasticsearch/logstash-${plugin}-elasticsearch.gemspec".toString() + "')")
+    }
+  }
+}
+
+task rubyUnitTests(dependsOn: [rubyBootstrap, bootstrapLogstash]) doLast {
+  rubyGradleUtils.rspec("filter")
+  rubyGradleUtils.rspec("input")
+  rubyGradleUtils.rspec("output", ["-t", "~secure_integration", "-t", "~integration"])
+}
+
+task downloadElasticsearch(type: GradleBuild) {
+  group 'IntegrationTests'
+  buildFile = "${projectDir}/integration-tests/build.gradle"
+  tasks = ['cloneElasticsearch']
+}
+
+task buildEs(type: GradleBuild, dependsOn: downloadElasticsearch) {
+  group 'IntegrationTests'
+  buildFile = "${projectDir}/integration-tests/build/es/build.gradle"
+  tasks = ['distribution:zip:assemble']
+}
+
+task unzipEs(type: Copy, dependsOn: [buildEs]) {
+  group 'IntegrationTests'
+  from zipTree(file("${projectDir}/integration-tests/build/es/distribution/zip/build/distributions/elasticsearch-${elasticsearchVersion}.zip"))
+  into file("${buildDir}")
+}
+
+task renameEs(type: Copy, dependsOn: [unzipEs]) {
+  group 'IntegrationTests'
+  from file(file("${buildDir}/elasticsearch-${elasticsearchVersion}"))
+  into file("${buildDir}/elasticsearch")
+}
+
+task deleteEsSource(type: Delete, dependsOn: [renameEs]) {
+  group 'IntegrationTests'
+  delete file("${buildDir}/elasticsearch-${elasticsearchVersion}")
+}
+
+task bootstrapElasticsearch(type: Copy, dependsOn: [deleteEsSource]) {
+  from "${projectDir}/logstash-output-elasticsearch/spec/fixtures/scripts/groovy"
+  from "${projectDir}/logstash-output-elasticsearch/spec/fixtures/scripts/painless"
+  into "${buildDir}/elasticsearch/config/scripts"
+}
+
+task outputIntegrationTest(dependsOn: [rubyBootstrap, bootstrapElasticsearch, bootstrapLogstash]) doLast {
+  IntegrationTests.BackgroundProcess elasticsearch
+  try {
+    elasticsearch =
+      IntegrationTests.runInBackground(file("${buildDir}/elasticsearch/bin/elasticsearch"))
+    IntegrationTests.waitForPort(9200)
+    rubyGradleUtils.rspec("output", ["-t", "integration"])
+  } finally {
+    if (elasticsearch != null) {
+      elasticsearch.close()
+    }
+  }
+}
+
+task publishGems(dependsOn: [packageGems]) doLast {
+
+}
+
+task wrapper(type: Wrapper) {
+  // Use 4.1 since currently 4.2+ is not compatible with Elasticsearch's build
+  gradleVersion = '4.1'
+}
+
+clean {
+  delete "${projectDir}/integration-tests/build"
+}
+
+check.dependsOn(rubyUnitTests, outputIntegrationTest)

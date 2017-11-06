@@ -1,0 +1,13 @@
+.*.swp
+.bundle
+build
+out
+.vendor
+.mvn/
+*.ipr
+*.iws
+*.iml
+.idea
+.gradle
+Gemfile.lock
+vendor

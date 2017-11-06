@@ -1,5 +1,0 @@
-*.idea
-*.gem
-Gemfile.lock
-.bundle
-vendor

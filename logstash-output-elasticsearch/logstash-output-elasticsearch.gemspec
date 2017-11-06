@@ -27,10 +27,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'json' # used by spec/unit/outputs/elasticsearch/http_client/pool_spec.rb
   s.add_development_dependency 'gzip' # used by spec/integration/outputs/index_spec.rb
 
-  if RUBY_PLATFORM == 'java'
-    s.platform = RUBY_PLATFORM
-    s.add_runtime_dependency "manticore", '>= 0.5.4', '< 1.0.0'
-  end
+  s.add_runtime_dependency 'manticore', '>= 0.5.4', '< 1.0.0'
 
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'flores'

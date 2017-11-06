@@ -26,5 +26,5 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'logstash-codec-json'
 
-  s.add_development_dependency 'logstash-devutils'
+  s.add_development_dependency 'logstash-devutils', '= 1.3.5'
 end

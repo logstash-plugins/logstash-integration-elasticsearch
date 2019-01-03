@@ -32,3 +32,4 @@ addons:
   apt:
     packages:
     - oracle-java8-installer
+before_install: gem install bundler -v '< 2'

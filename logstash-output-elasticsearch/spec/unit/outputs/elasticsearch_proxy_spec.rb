@@ -20,7 +20,7 @@ describe "Proxy option" do
 
     context "when specified as a URI" do
       shared_examples("hash conversion") do |hash|
-        let(:settings) { super.merge("proxy" => proxy)}
+        let(:settings) { super().merge("proxy" => proxy)}
         
         it "should set the proxy to the correct hash value" do
           expect(::Manticore::Client).to have_received(:new) do |options|

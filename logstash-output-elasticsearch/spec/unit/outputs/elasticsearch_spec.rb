@@ -46,7 +46,7 @@ describe "outputs/elasticsearch" do
       end
 
       context "with 'document type set'" do
-        let(:options) { super.merge("document_type" => "bar")}
+        let(:options) { super().merge("document_type" => "bar")}
         it "should get the event type from the 'document_type' setting" do
           expect(eso.send(:get_event_type, LogStash::Event.new())).to eql("bar")
         end
@@ -83,7 +83,7 @@ describe "outputs/elasticsearch" do
         
       context "as part of a URL" do
         let(:options) {
-          super.merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
+          super().merge("hosts" => ["http://#{user}:#{password.value}@localhost:9200"])
         }
         
         include_examples("an authenticated config")
@@ -91,7 +91,7 @@ describe "outputs/elasticsearch" do
       
       context "as a hash option" do
           let(:options) {
-            super.merge!(
+            super().merge!(
               "user" => user,
               "password" => password
             )
@@ -112,7 +112,7 @@ describe "outputs/elasticsearch" do
 
       context "with extra slashes" do
         let(:path) { "/slashed-path/ "}
-        let(:options) { super.merge("path" => "/some-path/") }
+        let(:options) { super().merge("path" => "/some-path/") }
 
         it "should properly set the path on the HTTP client without adding slashes" do
           expect(manticore_url.path).to eql(options["path"])
@@ -171,13 +171,13 @@ describe "outputs/elasticsearch" do
     end
 
     describe "without a port specified" do
-      let(:options) { super.merge('hosts' => 'localhost') }
+      let(:options) { super().merge('hosts' => 'localhost') }
       it "should properly set the default port (9200) on the HTTP client" do
         expect(manticore_url.port).to eql(9200)
       end
     end
     describe "with a port other than 9200 specified" do
-      let(:options) { super.merge('hosts' => 'localhost:9202') }
+      let(:options) { super().merge('hosts' => 'localhost:9202') }
       it "should properly set the specified port on the HTTP client" do
         expect(manticore_url.port).to eql(9202)
       end
